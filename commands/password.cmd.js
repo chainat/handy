@@ -7,6 +7,10 @@ const { stdout } = process;
 const genPass = async (length) => passwordGenerator.generate({
   length: length || 10,
   excludeSimilarCharacters: true,
+  numbers: true,
+  uppercase: true,
+  symbols: true,
+  exclude: ',_-|"\'{}+()<>~.:/^;[]',
 });
 
 module.exports = {
