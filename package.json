@@ -1,0 +1,31 @@
+{
+  "name": "@chainat/handy",
+  "version": "1.0.1",
+  "description": "Handy commands",
+  "main": "index.js",
+  "repository": {
+    "url": "https://github.com/chainat/handy.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "./node_modules/.bin/eslint ."
+  },
+  "keywords": [],
+  "author": "Chainat Wongtapan <chainat@gmail.com>",
+  "license": "ISC",
+  "bin": {
+    "handy": "./bin/cli.js"
+  },
+  "devDependencies": {
+    "eslint": "^5.15.3",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.16.0"
+  },
+  "dependencies": {
+    "bcrypt-nodejs": "0.0.3",
+    "generate-password": "^1.4.1",
+    "moment-timezone": "^0.5.23",
+    "uuid": "^3.3.2",
+    "yargs": "^13.2.1"
+  }
+}
