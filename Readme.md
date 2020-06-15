@@ -1,27 +1,25 @@
-# Handy Commands
-This is repo for mini handy commands.
+# Handy Utillity Command Repo
 
-Time:
-=====================
+### Overview
 
-Convert a UTC to local time. Used for converting DB to local time
-Syntax: `handy tz <utc-time>`
+A `Handy` command is a CLI tool written in NodeJS for managing git repo & sub repos in the current directly. We can extend to support other commands in the future.
 
-i.e. ```handy tz "2018-10-24 23:05:16"```
+### Requirements
 
+- Node version 8 or later
+- Has been tested and daily usage with ZSH. It should still work with Bash but not recommended
 
-Convert a local time to UTC
+### How to install
 
-```handy local <local-time>  Convert local to UTC```
+```
+  npm install -g @chainat/handy
+```
 
+### How to use
 
-Password:
-=====================
-Generate a new password and show both plain and hash.
-
-Default is 10 characters
-Syntax: handy gen-pass (password-length)
-
-```handy gen-pass```
-
-
+- List all git repo status - `handy git-status` or `handy git-status -a` to show all git submodule repos & the status
+- Checkout the latest platform code and push the latest platform changes - `handy git-sync`
+  - It goes to all submodules and checkout `develop` branch
+  - It captures the latest commits from all repos and push to platform repo if submodules have changed.
+- Checkout only - `handy git-sync -p`
+- See help - `handy --help`
