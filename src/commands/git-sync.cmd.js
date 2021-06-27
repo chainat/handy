@@ -44,10 +44,10 @@ module.exports = {
         // Checkout the latest develop on all repos
         checkoutLatest = await GitUtils.checkoutLatestSubmodules(
           allSubmodules,
-          'develop'
+          'develop',
         );
-        newChanges = checkoutLatest.filter((r) => r.status && r.hasNewChanges);
-        errorRepos = checkoutLatest.filter((r) => !r.status);
+        newChanges = checkoutLatest.filter(r => r.status && r.hasNewChanges);
+        errorRepos = checkoutLatest.filter(r => !r.status);
         hasErrors = errorRepos.length > 0;
         if (!hasErrors) {
           showText(`${c.green('Done!\n')}`);
@@ -55,9 +55,9 @@ module.exports = {
 
         // Show new changed repos
         if (newChanges.length) {
-          const moduleNames = newChanges.map((m) => m.name);
+          const moduleNames = newChanges.map(m => m.name);
           showText(
-            c.red(`\nNew updated modules: ${moduleNames.join(', ')}\n\n`)
+            c.red(`\nNew updated modules: ${moduleNames.join(', ')}\n\n`),
           );
         }
       } catch (err) {
@@ -69,14 +69,14 @@ module.exports = {
     if (hasErrors) {
       showText(
         c.red(
-          'Unable to complete checking out the latest codes. See the errors below'
-        )
+          'Unable to complete checking out the latest codes. See the errors below',
+        ),
       );
-      const str = errorRepos.map((r) => r.message).join('\n');
+      const str = errorRepos.map(r => r.message).join('\n');
       showText(c.red(`${str}\n`));
 
       const hasLocalChanges = errorRepos.some(
-        (r) => r.errorType === 'local-changes'
+        r => r.errorType === 'local-changes',
       );
       if (hasLocalChanges) {
         showText(c.red('Try to run "handy git-status" to see local changes.'));
@@ -93,7 +93,7 @@ module.exports = {
           const res = await GitUtils.commitLatestSubModules(gitPath);
           if (res.status) {
             showText(
-              [`Response: ${res.message}, \n\n`, c.green('Done!')].join('')
+              [`Response: ${res.message}, \n\n`, c.green('Done!')].join(''),
             );
           } else {
             showText(c.red(res.message));
@@ -103,7 +103,7 @@ module.exports = {
         }
       } else {
         showText(
-          '3) It is in a pull only mode. No new changes are committed and pushed.'
+          '3) It is in a pull only mode. No new changes are committed and pushed.',
         );
       }
     }

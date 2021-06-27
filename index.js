@@ -7,5 +7,4 @@ global.showLine = showLine;
 const argv = yargs
   .commandDir('./src/commands') // Load commands from this folder
   .demandCommand(1, 'Please supply a sub command')
-  .help()
-  .argv;
+  .help().argv;

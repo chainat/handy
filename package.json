@@ -12,7 +12,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "./node_modules/.bin/eslint .",
-    "lint-fix": "./node_modules/.bin/eslint . --fix",
+    "lint:fix": "yarn eslint . --fix",
     "start": "node ./index.js"
   },
   "keywords": [],

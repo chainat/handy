@@ -23,9 +23,8 @@ class GitUtils {
       showText(`Found error from 'git submodule status' - Err: ${err.message}`);
       process.exit(1);
     }
-    const out =
-      (modules &&
-        modules.split('\n').map((module) => {
+    const out = (modules
+        && modules.split('\n').map((module) => {
           const [commit, name, pointer] = module.trim().split(' ');
           const fullPath = name ? path.join(gitPath, name) : '';
           return {
@@ -34,14 +33,14 @@ class GitUtils {
             fullPath,
             pointer,
           };
-        })) ||
-      [];
-    const repos = out.filter((o) => o.name);
+        }))
+      || [];
+    const repos = out.filter(o => o.name);
 
     // return repos.filter(m => m.name.indexOf('quriosity_adminportal_light') === 0);
 
     // Exclude the specified repos
-    const selected = repos.filter((m) => excludedRepos.indexOf(m.name) === -1);
+    const selected = repos.filter(m => excludedRepos.indexOf(m.name) === -1);
     return selected;
   }
 
@@ -85,9 +84,9 @@ class GitUtils {
     const list = await git.subModule(['status']);
     const arr = list.split('\n');
     const items = arr
-      .map((m) => m.split(' ').map((i) => i.trim()))
-      .filter((r) => r.length === 3);
-    const out = items.map((m) => m[1]);
+      .map(m => m.split(' ').map(i => i.trim()))
+      .filter(r => r.length === 3);
+    const out = items.map(m => m[1]);
     return out;
   }
 
@@ -105,9 +104,9 @@ class GitUtils {
 
       // console.log(module.fullPath, currentBranch.commit, currentRemoteBranch.commit);
       const matchedRemoteBranch = !!(
-        currentBranch &&
-        currentRemoteBranch &&
-        currentBranch.commit === currentRemoteBranch.commit
+        currentBranch
+        && currentRemoteBranch
+        && currentBranch.commit === currentRemoteBranch.commit
       );
 
       const hasLocalChanges = !!(
@@ -146,16 +145,16 @@ class GitUtils {
       });
 
       const newRepos = await Promise.all(promises);
-      const names = newRepos.map((r) => r.name);
+      const names = newRepos.map(r => r.name);
       if (newRepos.length) {
         showText(
-          c.green(`Found new GIT submodule(s) - ${c.red(names.join(', '))}\n`)
+          c.green(`Found new GIT submodule(s) - ${c.red(names.join(', '))}\n`),
         );
         showText(
           [
             'Please initialise new submodules.',
             'You can run "git submodule update --init --recursive"',
-          ].join(' ')
+          ].join(' '),
         );
         process.exit(1);
       }
@@ -174,13 +173,11 @@ class GitUtils {
    */
   static async checkoutLatestSubmodules(modules, branch) {
     // Ensure all submodule have uncommitted works before proceeding next (except handy submodule)
-    const safeToPullPromises = modules.map(async (module) =>
-      GitUtils.safeToPull(module.fullPath)
-    );
+    const safeToPullPromises = modules.map(async module => GitUtils.safeToPull(module.fullPath));
     const allResponses = await Promise.all(safeToPullPromises);
-    const unsafe = allResponses.filter((r) => !r.safe);
+    const unsafe = allResponses.filter(r => !r.safe);
     if (unsafe && unsafe.length) {
-      const repos = unsafe.map((r) => r.fullPath).join(', ');
+      const repos = unsafe.map(r => r.fullPath).join(', ');
       const len = unsafe.length;
       return [
         {
@@ -233,10 +230,10 @@ class GitUtils {
         showText(
           [
             `Pulling commits on a ${c.red(branch)} branch of '${c.green(
-              name
+              name,
             )}' submodule`,
             !onCurrentBranch ? `It was previously on ${c.red(current)}` : '',
-          ].join('. ')
+          ].join('. '),
         );
 
         // 4) Checkout the latest on the given branch
@@ -257,7 +254,7 @@ class GitUtils {
               'quriosity_utils',
             ]);
             showText(
-              `Commit submodule update on ${c.red(module.name)} submodule`
+              `Commit submodule update on ${c.red(module.name)} submodule`,
             );
           }
 
@@ -273,7 +270,7 @@ class GitUtils {
           // Capture if we detect a new change from this repo
           branchInfo = await git.branch();
           const newCurrentBranchObj = getCurrentBranchFromBranchSummary(
-            branchInfo
+            branchInfo,
           );
           const newCommit = newCurrentBranchObj && newCurrentBranchObj.commit;
 
@@ -286,8 +283,7 @@ class GitUtils {
           res.message = `Unable to checkout ${branch}`;
         }
       } catch (err) {
-        const knownIssue =
-          err.message.indexOf('Cannot rebase onto multiple branches') !== -1;
+        const knownIssue = err.message.indexOf('Cannot rebase onto multiple branches') !== -1;
         if (knownIssue) {
           res.message = `Found a GIT rebasing issue in '${module.name}' module.`;
         } else {
@@ -443,10 +439,8 @@ class GitUtils {
 
         const tagKeyAnnotated = `tags/${tag}`; // Annotated tag SHA or actual commit SHA
         const tagKey = `${tagKeyAnnotated}^{}`; // Actual commit SHA if tag was created by `git tag -a tag-name`
-        const foundAnnotatedTag =
-          typeof branchesAndTags[tagKeyAnnotated] !== 'undefined';
-        const foundActualCommitTag =
-          typeof branchesAndTags[tagKey] !== 'undefined';
+        const foundAnnotatedTag = typeof branchesAndTags[tagKeyAnnotated] !== 'undefined';
+        const foundActualCommitTag = typeof branchesAndTags[tagKey] !== 'undefined';
         result.status = foundBranch !== false || foundAnnotatedTag !== false;
         if (foundBranch) {
           result.sha = branchesAndTags[branch];
@@ -510,7 +504,7 @@ class GitUtils {
     const { modified } = stackStatus;
     if (modified.length) {
       // naive search for a `.` in the file name, don't need to compare with sub modules
-      const files = modified.filter((r) => r.indexOf('.') !== -1);
+      const files = modified.filter(r => r.indexOf('.') !== -1);
       return files;
     }
     return [];
@@ -544,7 +538,7 @@ class GitUtils {
       const submodules = GitUtils.parseSubmodules(gitSubmodules);
 
       // Checkout latest quriosity utils
-      const quriosityUtils = submodules.filter((r) => r.isQuriosityUtils);
+      const quriosityUtils = submodules.filter(r => r.isQuriosityUtils);
       if (submodules.length && quriosityUtils.length) {
         // Assume it's only one
         const module = quriosityUtils.pop();
@@ -574,7 +568,7 @@ class GitUtils {
   }
 
   static parseSubmodules(gitSubmodules) {
-    const lines = gitSubmodules.split('\n').filter((r) => r !== '');
+    const lines = gitSubmodules.split('\n').filter(r => r !== '');
     if (lines.length) {
       const modules = lines.map((module) => {
         const [sha, name, branch] = module.trim().split(' ');
@@ -599,7 +593,7 @@ class GitUtils {
    */
   static hasLocalBranch(branchInfo, branch) {
     const { all } = branchInfo;
-    return all.some((r) => r === branch);
+    return all.some(r => r === branch);
   }
 
   static async createBranchAndCheckout(branchName, git) {

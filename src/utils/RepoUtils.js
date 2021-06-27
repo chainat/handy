@@ -1,5 +1,5 @@
 class RepoUtils {
-  static autoCommit(moduleName) {
+  static autoCommit() {
     // @todo - revise
   }
 }

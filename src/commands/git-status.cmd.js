@@ -33,10 +33,10 @@ module.exports = {
       return newObject;
     });
     const total = formatted.length;
-    const filltered = formatted.filter((m) => !m.upToDated);
+    const filltered = formatted.filter(m => !m.upToDated);
 
     showText(
-      `\nThere are ${total} repos, ${filltered.length} repo(s) are not up-to-date`
+      `\nThere are ${total} repos, ${filltered.length} repo(s) are not up-to-date`,
     );
     showLine();
     const report = v || verbose ? formatted : filltered;

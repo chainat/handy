@@ -3,16 +3,15 @@ const fs = require('fs');
 
 const allSubmodules = (modified, submodules) => {
   if (modified && modified.length) {
-    const out = modified.filter((m) => submodules.indexOf(m) !== 0);
+    const out = modified.filter(m => submodules.indexOf(m) !== 0);
     return out.length === 0;
   }
   return true;
 };
 
-const wait = async (delayInMs) =>
-  new Promise((resolve) => {
-    setTimeout(resolve, delayInMs);
-  });
+const wait = async delayInMs => new Promise((resolve) => {
+  setTimeout(resolve, delayInMs);
+});
 
 const nextVersion = (current, versionType) => {
   const arr = current.split('.');
@@ -40,7 +39,7 @@ const getCurrentBranchFromBranchSummary = (branchSummary) => {
   if (branches) {
     const arr = Object.keys(branches);
     const [currentBranchKey] = arr.filter(
-      (branchKey) => branches[branchKey].current === true
+      branchKey => branches[branchKey].current === true,
     );
     return branches[currentBranchKey] || {};
   }
@@ -61,7 +60,7 @@ const allPackageFiles = (dir) => {
     const folderPath = path.join(dir, f, 'package.json');
     return fs.existsSync(folderPath) ? folderPath : false;
   });
-  return packageFiles.filter((f) => !!f);
+  return packageFiles.filter(f => !!f);
 };
 
 module.exports = {

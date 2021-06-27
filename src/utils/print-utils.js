@@ -5,7 +5,7 @@ const _ = require('lodash');
 const moment = require('moment-timezone');
 const c = require('ansi-colors');
 
-const highlight = text => c.blue(text);
+const highlight = text => c.yellow(text);
 
 const showLine = (char = '=', length = 80) => {
   stdout.write('\n');
@@ -18,8 +18,8 @@ const showLine = (char = '=', length = 80) => {
 // eslint-disable-next-line
 const wrapAccentColour = (text, target = true) => (text.toString() === target.toString() ? c.red(text) : text);
 
-const showText = (t) => {
-  stdout.write(`${t}\n`);
+const showText = (t, autoNewLine = '\n') => {
+  stdout.write(`${t}${autoNewLine !== false ? autoNewLine : ''}`);
 };
 
 const getParams = (arr) => {
