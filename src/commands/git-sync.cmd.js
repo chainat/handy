@@ -1,6 +1,7 @@
 const c = require('ansi-colors');
 const { showText } = require('../utils/print-utils');
 const GitUtils = require('../utils/GitUtils');
+const { DEFAULT_DEV_BRANCH } = require('../../const');
 
 module.exports = {
   command: 'git-sync [-a] [-p]',
@@ -44,7 +45,7 @@ module.exports = {
         // Checkout the latest develop on all repos
         checkoutLatest = await GitUtils.checkoutLatestSubmodules(
           allSubmodules,
-          'develop',
+          DEFAULT_DEV_BRANCH,
         );
         newChanges = checkoutLatest.filter(r => r.status && r.hasNewChanges);
         errorRepos = checkoutLatest.filter(r => !r.status);

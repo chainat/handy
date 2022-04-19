@@ -27,16 +27,16 @@ module.exports = {
 
     const status = await GitUtils.getStatus(modules);
     const formatted = status.map((m) => {
-      const shortPath = m.fullPath.replace(gitPath, '');
+      const shortPath = m.fullPath.replace(gitPath, '').replace(/^\//g, '');
       const newObject = { shortPath, ...m };
       delete newObject.fullPath;
       return newObject;
     });
     const total = formatted.length;
-    const filltered = formatted.filter(m => !m.upToDated);
+    const filltered = formatted.filter((m) => !m.upToDated);
 
     showText(
-      `\nThere are ${total} repos, ${filltered.length} repo(s) are not up-to-date`,
+      `\nThere are ${total} repos, ${filltered.length} repo(s) are not up-to-date`
     );
     showLine();
     const report = v || verbose ? formatted : filltered;
