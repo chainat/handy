@@ -1,12 +1,13 @@
-const c = require('ansi-colors');
-const { showText } = require('../utils/print-utils');
-const GitUtils = require('../utils/GitUtils');
-const { DEFAULT_DEV_BRANCH } = require('../../const');
+import c from 'ansi-colors';
+import { showText } from '../utils/print-utils';
+import { GitUtils } from '../utils/GitUtils';
+import { DEFAULT_DEV_BRANCH } from '../consts';
+import { Config } from '../utils/Config';
 
 module.exports = {
   command: 'git-sync [-a] [-p]',
   describe: 'Sync all git submodules',
-  builder: (yargs) => {
+  builder: (yargs: SimpleObject) => {
     yargs.option('pull-only', {
       describe:
         'Only pull down, do not push the `platform` up. only for development/test mode',
@@ -15,16 +16,16 @@ module.exports = {
     });
     yargs.alias('p', 'pull-only');
   },
-  handler: async (argv) => {
+  handler: async (argv: SimpleObject) => {
     const { p } = argv;
-    const gitPath = GitUtils.getCurrentFolder();
-    const excluded = [];
+    const gitPath = new Config().getRepoPath();
+    const excluded: string[] = [];
     const allSubmodules = await GitUtils.listModules(gitPath, excluded);
     const start = +new Date();
     let hasErrors = false;
     let checkoutLatest;
-    let errorRepos = [];
-    let newChanges = [];
+    let errorRepos: SimpleObject[] = [];
+    let newChanges: SimpleObject[] = [];
 
     // Initialise submodules if there are any new submodules found
     if (!hasErrors) {
@@ -45,10 +46,12 @@ module.exports = {
         // Checkout the latest develop on all repos
         checkoutLatest = await GitUtils.checkoutLatestSubmodules(
           allSubmodules,
-          DEFAULT_DEV_BRANCH,
+          DEFAULT_DEV_BRANCH
         );
-        newChanges = checkoutLatest.filter(r => r.status && r.hasNewChanges);
-        errorRepos = checkoutLatest.filter(r => !r.status);
+        newChanges = checkoutLatest.filter(
+          (r: SimpleObject) => r?.status && r.hasNewChanges
+        );
+        errorRepos = checkoutLatest.filter((r: SimpleObject) => !r?.status);
         hasErrors = errorRepos.length > 0;
         if (!hasErrors) {
           showText(`${c.green('Done!\n')}`);
@@ -56,9 +59,9 @@ module.exports = {
 
         // Show new changed repos
         if (newChanges.length) {
-          const moduleNames = newChanges.map(m => m.name);
+          const moduleNames = newChanges.map((m) => m.name);
           showText(
-            c.red(`\nNew updated modules: ${moduleNames.join(', ')}\n\n`),
+            c.red(`\nNew updated modules: ${moduleNames.join(', ')}\n\n`)
           );
         }
       } catch (err) {
@@ -70,14 +73,14 @@ module.exports = {
     if (hasErrors) {
       showText(
         c.red(
-          'Unable to complete checking out the latest codes. See the errors below',
-        ),
+          'Unable to complete checking out the latest codes. See the errors below'
+        )
       );
-      const str = errorRepos.map(r => r.message).join('\n');
+      const str = errorRepos.map((r: SimpleObject) => r?.message).join('\n');
       showText(c.red(`${str}\n`));
 
       const hasLocalChanges = errorRepos.some(
-        r => r.errorType === 'local-changes',
+        (r: SimpleObject) => r?.errorType === 'local-changes'
       );
       if (hasLocalChanges) {
         showText(c.red('Try to run "handy git-status" to see local changes.'));
@@ -94,23 +97,23 @@ module.exports = {
           const res = await GitUtils.commitLatestSubModules(gitPath);
           if (res.status) {
             showText(
-              [`Response: ${res.message}, \n\n`, c.green('Done!')].join(''),
+              [`Response: ${res.message}, \n\n`, c.green('Done!')].join('')
             );
           } else {
-            showText(c.red(res.message));
+            showText(c.red(res?.message ?? ''));
           }
         } catch (err) {
-          showText(`Error: ${err.message}`);
+          showText(`Error: ${err?.message ?? ''}`);
         }
       } else {
         showText(
-          '3) It is in a pull only mode. No new changes are committed and pushed.',
+          '3) It is in a pull only mode. No new changes are committed and pushed.'
         );
       }
     }
 
     const stop = +new Date();
     const taken = (stop - start) / 1000;
-    showText(`Time taken: ${c.green(taken)} seconds`);
+    showText(`Time taken: ${c.green(taken.toString())} seconds`);
   },
 };

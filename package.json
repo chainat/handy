@@ -1,7 +1,7 @@
 {
   "name": "@chainat/handy",
-  "description": "Handy commands",
-  "version": "2.1.0",
+  "description": "Handy command to manage the git parent and submodules",
+  "version": "2.2.3",
   "main": "index.js",
   "repository": {
     "url": "https://github.com/chainat/handy.git"
@@ -11,33 +11,43 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "./node_modules/.bin/eslint .",
+    "lint": "eslint .",
     "lint:fix": "yarn eslint . --fix",
-    "start": "node ./index.js"
+    "start": "node ./index.js",
+    "build": "tsc",
+    "test-handy": "yarn build && node ./build/index.js"
   },
   "keywords": [],
   "author": "Chainat Wongtapan <chainat@gmail.com>",
   "license": "ISC",
   "devDependencies": {
-    "eslint": "^5.15.3",
+    "@typescript-eslint/eslint-plugin": "^5.42.1",
+    "@typescript-eslint/parser": "^5.42.1",
+    "eslint": "^8.27.0",
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-plugin-import": "^2.16.0"
   },
   "dependencies": {
+    "@types/ansi-colors": "^3.2.2",
+    "@types/cli-table": "^0.3.1",
+    "@types/lodash": "^4.14.188",
+    "@types/prettyjson": "^0.0.30",
+    "@types/yargs": "^17.0.13",
     "ansi-colors": "^3.2.4",
     "await-to-js": "^2.1.1",
+    "await-to-ts": "^1.0.6",
     "cli-table": "^0.3.1",
     "dotenv": "^7.0.0",
     "js-yaml": "^3.13.1",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.21",
     "mkdirp": "^0.5.1",
     "moment-timezone": "^0.5.23",
-    "mysql": "^2.17.1",
     "prettyjson": "^1.2.1",
     "prompts": "^2.3.0",
-    "simple-git": "^3.5.0",
+    "simple-git": "^3.14.1",
+    "tsc": "^2.0.4",
+    "typescript": "^4.8.4",
     "uuid": "^3.3.2",
-    "ws": "^7.2.1",
     "yamljs": "^0.3.0",
     "yargs": "^13.2.1"
   }

@@ -1,28 +1,35 @@
-const path = require('path');
-const fs = require('fs');
-const Git = require('simple-git/promise');
-const c = require('ansi-colors');
-const { showText, wrapAccentColour } = require('../utils/print-utils');
-const RepoUtils = require('../utils/RepoUtils');
-const SubModuleUtils = require('../utils/SubModuleUtils');
-const { wait, getCurrentBranchFromBranchSummary } = require('../utils/generic');
+import * as path from 'path';
+import * as fs from 'fs';
+import Git, { BranchSummary, SimpleGit, StatusResult } from 'simple-git';
+import c from 'ansi-colors';
+import { showText, wrapAccentColour } from './print-utils';
+import { SubModuleUtils } from './SubModuleUtils';
+import { wait, getCurrentBranchFromBranchSummary } from './generic';
 
-const { allSubmodules } = require('../utils/generic');
+import { allSubmodules } from './generic';
 
 // Supply default path to avoid an issue coming from `git ls-remote repo`
 const DEFAULT_PATH = '/';
 
+/**
+ * GitUtils class
+ */
 class GitUtils {
-  static async listModules(gitPath, excludedRepos = []) {
-    const git = Git(gitPath);
-    git.silent(true);
-    let modules = [];
+  static async listModules(
+    gitPath: string,
+    excludedRepos: string[] = []
+  ): Promise<GitModuleStatus[]> {
+    const git: SimpleGit = Git(gitPath);
+    let modules: string;
     try {
       modules = await git.subModule(['status']);
     } catch (err) {
-      showText(`Found error from 'git submodule status' - Err: ${err.message}`);
+      showText(
+        `Found error from 'git submodule status' - Err: ${err?.message}`
+      );
       process.exit(1);
     }
+    // Check status of all modules
     const out =
       (modules &&
         modules.split('\n').map((module) => {
@@ -31,6 +38,7 @@ class GitUtils {
           return {
             commit,
             name,
+            path: fullPath,
             fullPath,
             pointer,
           };
@@ -38,21 +46,19 @@ class GitUtils {
       [];
     const repos = out.filter((o) => o.name);
 
-    // return repos.filter(m => m.name.indexOf('quriosity_adminportal_light') === 0);
-
     // Exclude the specified repos
     const selected = repos.filter((m) => excludedRepos.indexOf(m.name) === -1);
     return selected;
   }
 
-  static async safeToPull(fullPath) {
-    const git = Git(fullPath);
+  static async safeToPull(fullPath: string) {
+    const git: SimpleGit = Git(fullPath);
     let modified;
-    let status = await git.status();
+    let status: StatusResult = await git.status();
 
     // If there is a local change in all submodules, just reset it
     const submodules = await GitUtils.checkSubmodules(fullPath);
-    modified = (status && status.modified) || [];
+    modified = status?.modified ?? [];
     if (modified && submodules) {
       const matchedAll = allSubmodules(modified, submodules);
       if (matchedAll) {
@@ -80,7 +86,7 @@ class GitUtils {
    * @param parentRepoPath
    * @returns {Promise<string[]>}
    */
-  static async checkSubmodules(parentRepoPath) {
+  static async checkSubmodules(parentRepoPath: string) {
     const git = Git(parentRepoPath);
     const list = await git.subModule(['status']);
     const arr = list.split('\n');
@@ -91,23 +97,30 @@ class GitUtils {
     return out;
   }
 
-  static async getStatus(modules) {
+  /**
+   * Show git status
+   * @param modules
+   * @returns
+   */
+  static async getStatus(modules: GitModuleStatus[]): Promise<RepoStatus[]> {
     const promises = modules.map(async (module) => {
       const { fullPath } = module;
       const git = Git(fullPath);
 
       // Get current branch info
       const branchInfo = await git.branch();
-      const status = await git.status();
+      const status: StatusResult = await git.status();
       const { current } = branchInfo;
-      const currentBranch = (status && status.current) || '';
-      const currentRemoteBranch = (status && status.tracking) || '';
+      const currentBranch = status?.current ?? '';
+      // recently, Simple-get start to add `origin/` on the remote branch
+      const currentRemoteBranch =
+        status?.tracking?.replace('origin/', '') ?? '';
 
       // console.log(module.fullPath, currentBranch.commit, currentRemoteBranch.commit);
       const matchedRemoteBranch = !!(
         currentBranch &&
         currentRemoteBranch &&
-        currentBranch.commit === currentRemoteBranch.commit
+        currentBranch === currentRemoteBranch
       );
 
       const hasLocalChanges = !!(
@@ -115,24 +128,31 @@ class GitUtils {
       );
       const hasNewFiles = !!status.files.length;
 
-      const upToDated = matchedRemoteBranch && !hasLocalChanges && !hasNewFiles;
+      const latest = matchedRemoteBranch && !hasLocalChanges && !hasNewFiles;
       return {
         fullPath: module.fullPath,
         current,
         // matchedRemoteBranch: wrapAccentColour(matchedRemoteBranch, false),
         detached: branchInfo.detached,
-        hasLocalChanges: wrapAccentColour(hasLocalChanges, true),
-        hasNewFiles: wrapAccentColour(hasNewFiles, true),
-        upToDated,
-      };
+        hasLocalChanges: wrapAccentColour(hasLocalChanges.toString(), 'true'),
+        hasNewFiles: wrapAccentColour(hasNewFiles.toString(), 'true'),
+        latest: wrapAccentColour(latest.toString(), 'false'),
+      } as RepoStatus;
     });
     const allResponses = await Promise.all(promises);
     return allResponses;
   }
 
-  static async checkAndInitialiseSubmodules(gitPath) {
+  /**
+   * Initialise submodule if needed
+   * @param gitPath
+   * @returns
+   */
+  static async checkAndInitialiseSubmodules(gitPath: string) {
     try {
       const modules = await SubModuleUtils.readModuleFiles(gitPath);
+
+      // Validate if the git part exists
       const promises = modules.filter((module) => {
         const fullPath = path.join(gitPath, module.path);
         if (fs.existsSync(fullPath)) {
@@ -172,7 +192,10 @@ class GitUtils {
    * @param branch
    * @returns {Promise<*>}
    */
-  static async checkoutLatestSubmodules(modules, branch) {
+  static async checkoutLatestSubmodules(
+    modules: GitModuleInfo[],
+    branch: string
+  ): Promise<any[]> {
     // Ensure all submodule have uncommitted works before proceeding next (except handy submodule)
     const safeToPullPromises = modules.map(async (module) =>
       GitUtils.safeToPull(module.fullPath)
@@ -207,36 +230,25 @@ class GitUtils {
       try {
         // 1) Open current repo
         const git = Git(fullPath);
-        git.silent(true); // suppress the error inside the module itself, treat it ourselves
-        let branchInfo = await git.branchLocal();
+        let branchInfo = await git.branch(['-v', '-a']);
         let { current } = branchInfo;
-        const { commit } = getCurrentBranchFromBranchSummary(branchInfo);
+        const { commit } = getCurrentBranchFromBranchSummary(branchInfo) ?? {};
 
-        // 2) Checkout the latest `utils` submodule first
-        // This applies for a few ML services
-        if (RepoUtils.autoCommit(module.name)) {
-          // Checkout the latest develop branch and commit if there is a new change
-          await GitUtils.checkoutAndCommitSubmodules(fullPath, git, branch);
-        }
+        // 2) skip
 
         // 3) Work out the current branch
         const onCurrentBranch = current === branch;
-        // const newBranch = branchInfo.all.indexOf(branch) === -1;
-        // if (!onCurrentBranch && newBranch) {
-        //   // Create a local branch
-        //   await GitUtils.createBranchAndCheckout(branch, git, fullPath);
-        // } else {
-        //   // checkout branch
-        //   await git.checkout(branch);
+        // if (fullPath.indexOf('byb-api') !== -1) {
+        //   console.log(fullPath, branchInfo, 'b', branch);
         // }
 
-        try {
+        const newBranch = branchInfo.all.indexOf(branch) === -1;
+        if (!onCurrentBranch && newBranch) {
+          // Create a local branch
+          await GitUtils.createBranchAndCheckout(branch, git, fullPath);
+        } else {
           // checkout branch
           await git.checkout(branch);
-        } catch (err) {
-          throw new Error(
-            `unable to check out "${branch}" for ${fullPath} repo`
-          );
         }
 
         showText(
@@ -256,6 +268,9 @@ class GitUtils {
           try {
             await git.pull('origin', branch, { '--rebase': 'false' });
           } catch (err) {
+            showText(
+              `Unable to pull the repo ${fullPath} due to ${err.message}`
+            );
             throw err;
           }
 
@@ -270,7 +285,7 @@ class GitUtils {
           branchInfo = await git.branch();
           const newCurrentBranchObj =
             getCurrentBranchFromBranchSummary(branchInfo);
-          const newCommit = newCurrentBranchObj && newCurrentBranchObj.commit;
+          const newCommit = newCurrentBranchObj && newCurrentBranchObj?.commit;
 
           if (newCommit !== commit) {
             res.hasNewChanges = true;
@@ -282,7 +297,7 @@ class GitUtils {
         }
       } catch (err) {
         const knownIssue =
-          err.message.indexOf('Cannot rebase onto multiple branches') !== -1;
+          err?.message.indexOf('Cannot rebase onto multiple branches') !== -1;
         if (knownIssue) {
           res.message = `Found a GIT rebasing issue in '${module.name}' module.`;
         } else {
@@ -299,7 +314,10 @@ class GitUtils {
    * @param modulePath
    * @returns {Promise<void>}
    */
-  static async checkoutLatestHandySubmodule(modulePath, branch) {
+  static async checkoutLatestHandySubmodule(
+    modulePath: string,
+    branch: string
+  ) {
     const fullPath = modulePath;
     const res = {
       status: false,
@@ -347,11 +365,11 @@ class GitUtils {
    * @param repoPath
    * @returns {Promise<boolean>}
    */
-  static async commitLatestSubModules(repoPath, branch = 'master') {
-    const res = {
+  static async commitLatestSubModules(repoPath: string, branch = 'master') {
+    const res: GitCommitResponse = {
       status: false,
     };
-    const git = new Git(repoPath);
+    const git = Git(repoPath);
 
     // 1) Confirm branch
     let branchInfo = await git.branch();
@@ -370,7 +388,7 @@ class GitUtils {
     }
 
     // 2) Check status
-    let stackStatus = await git.status();
+    let stackStatus: StatusResult = await git.status();
     const fileChanges = GitUtils.hasFileChanges(stackStatus);
     if (fileChanges.length) {
       res.message = [
@@ -398,7 +416,7 @@ class GitUtils {
         modified.join(', '),
       ].join('');
       // Commit changes
-      git.commit(commitMessage);
+      const result = git.commit(commitMessage);
 
       // Push
       git.push('origin', branch);
@@ -420,7 +438,7 @@ class GitUtils {
    * @param tag
    * @returns {Promise.<{status: boolean, sha: string}>}
    */
-  static async validateBranchOrTag(repo, branch, tag) {
+  static async validateBranchOrTag(repo: string, branch: string, tag: string) {
     const result = {
       status: false,
       sha: '',
@@ -434,7 +452,7 @@ class GitUtils {
       // console.log(branchesStr);
       if (branchesStr) {
         const branchesAndTags = await GitUtils.parseBranchStr(branchesStr);
-        const foundBranch = typeof branchesAndTags[branch] !== 'undefined';
+        const foundBranch = typeof branchesAndTags?.[branch] !== 'undefined';
 
         const tagKeyAnnotated = `tags/${tag}`; // Annotated tag SHA or actual commit SHA
         const tagKey = `${tagKeyAnnotated}^{}`; // Actual commit SHA if tag was created by `git tag -a tag-name`
@@ -465,9 +483,13 @@ class GitUtils {
    * @param branchesStr
    * @returns {Promise.<object>}
    */
-  static async parseBranchStr(branchesStr, removeRemoteBranchName = true) {
+  static async parseBranchStr(
+    branchesStr: string,
+    removeRemoteBranchName = true
+  ): Promise<SimpleObject> {
     const tmpBranches = branchesStr.split(/\r|\r\n|\n/);
-    const branches = {};
+    const branches: SimpleObject = {};
+
     tmpBranches.forEach((line) => {
       const [sha, remoteBranchName] = line.split(/\t|[\s]{8}/); // i.e. 27a7ab120a875b21605b531173f9f1db6464ddb4 refs/remotes/origin/feature/test-branch
       if (typeof remoteBranchName !== 'undefined') {
@@ -496,12 +518,12 @@ class GitUtils {
    * @param status
    * @returns {Promise<boolean>}
    */
-  static hasSomeChangesToPush(status) {
+  static hasSomeChangesToPush(status: StatusResult) {
     const { ahead } = status;
     return ahead > 0;
   }
 
-  static hasFileChanges(stackStatus) {
+  static hasFileChanges(stackStatus: StatusResult) {
     const { modified } = stackStatus;
     if (modified.length) {
       // naive search for a `.` in the file name, don't need to compare with sub modules
@@ -511,8 +533,8 @@ class GitUtils {
     return [];
   }
 
-  static async hasNewCommits(handyModulePath) {
-    const git = new Git(handyModulePath);
+  static async hasNewCommits(handyModulePath: string) {
+    const git = Git(handyModulePath);
     const status = await git.status();
     const { modified, ahead } = status;
     return ahead > 0 || modified.length === 0;
@@ -523,63 +545,19 @@ class GitUtils {
    * @returns {*}
    */
   static getCurrentFolder() {
-    return process.cwd();
+    return '/Users/chainat/dev/platform';
+    // return process.cwd();
   }
 
-  /**
-   * Check out submodule
-   * @param fullPath
-   * @param git
-   * @param branchName
-   * @returns {Promise<null>}
-   */
-  static async checkoutAndCommitSubmodules(fullPath, git, branchName) {
-    try {
-      const gitSubmodules = await git.subModule(['status']);
-      const submodules = GitUtils.parseSubmodules(gitSubmodules);
-
-      // Checkout latest quriosity utils
-      const quriosityUtils = submodules.filter((r) => r.isQuriosityUtils);
-      if (submodules.length && quriosityUtils.length) {
-        // Assume it's only one
-        const module = quriosityUtils.pop();
-        const submodulePath = path.join(fullPath, module.name);
-        const utilGitRepo = new Git(submodulePath);
-
-        // Create && checkout develop
-        const branchInfo = await utilGitRepo.branchLocal();
-        const isOnCurrentBranch = branchInfo.current === branchName;
-        const hasLocalBranch = GitUtils.hasLocalBranch(branchInfo, branchName);
-
-        // If not on develop branch but have local branch, checkout develop branch
-        if (hasLocalBranch && !isOnCurrentBranch) {
-          await utilGitRepo.checkout(branchName);
-        }
-        if (!hasLocalBranch) {
-          await GitUtils.createBranchAndCheckout(branchName, utilGitRepo);
-        }
-
-        // Pull latest
-        await utilGitRepo.pull('origin', branchName, { '--no-rebase': null });
-      }
-    } catch (err) {
-      console.log('heee', err);
-      throw err;
-    }
-    return null;
-  }
-
-  static parseSubmodules(gitSubmodules) {
+  static parseSubmodules(gitSubmodules: string) {
     const lines = gitSubmodules.split('\n').filter((r) => r !== '');
     if (lines.length) {
       const modules = lines.map((module) => {
         const [sha, name, branch] = module.trim().split(' ');
-        const isQuriosityUtils = name === 'quriosity_utils';
         return {
           sha,
           name,
           branch,
-          isQuriosityUtils,
         };
       });
       return modules;
@@ -593,12 +571,16 @@ class GitUtils {
    * @param branch
    * @returns {*}
    */
-  static hasLocalBranch(branchInfo, branch) {
+  static hasLocalBranch(branchInfo: BranchSummary, branch: string) {
     const { all } = branchInfo;
     return all.some((r) => r === branch);
   }
 
-  static async createBranchAndCheckout(branchName, git, fullPath = '') {
+  static async createBranchAndCheckout(
+    branchName: string,
+    git: SimpleGit,
+    fullPath = ''
+  ) {
     try {
       const startPoint = `origin/${branchName}`;
       await git.checkoutBranch(branchName, startPoint);
@@ -611,4 +593,4 @@ class GitUtils {
   }
 }
 
-module.exports = GitUtils;
+export { GitUtils };
